@@ -1,7 +1,13 @@
-ATtiny84 and RFM12B wireless sensor nodes
+TinyTX - An ATtiny84 and RFM12B wireless sensor node
+----------------------------------------------------
 
-See http://zorg.org/ttxv2
+By Nathan Chantrell. For hardware design see http://nathan.chantrell.net/tinytx
+
+Licenced under the Creative Commons Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0) licence:
+http://creativecommons.org/licenses/by-sa/3.0/
+
 
 TinyTX_DS18B20
 --------------
 With DS18B20 temperature sensor. 
+

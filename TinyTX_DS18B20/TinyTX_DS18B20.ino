@@ -1,11 +1,15 @@
-//--------------------------------------------------------------------------------------
-// TinyTX ATtiny84 and RFM12B Wireless Temperature Sensor Node
-// By Nathan Chantrell http://nathan.chantrell.net
+//----------------------------------------------------------------------------------------------------------------------
+// TinyTX - An ATtiny84 and RFM12B Wireless Temperature Sensor Node
+// By Nathan Chantrell. For hardware design see http://nathan.chantrell.net/tinytx
 //
 // Using the Dallas DS18B20 temperature sensor
 //
-// GNU GPL V3
-//--------------------------------------------------------------------------------------
+// Licenced under the Creative Commons Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0) licence:
+// http://creativecommons.org/licenses/by-sa/3.0/
+//
+// Requires Arduino IDE with arduino-tiny core: http://code.google.com/p/arduino-tiny/
+// and small change to OneWire library, see: http://arduino.cc/forum/index.php/topic,91491.msg687523.html#msg687523
+//----------------------------------------------------------------------------------------------------------------------
 
 #include <OneWire.h> // http://www.pjrc.com/teensy/arduino_libraries/OneWire.zip
 #include <DallasTemperature.h> // http://download.milesburton.com/Arduino/MaximTemperature/DallasTemperature_371Beta.zip
@@ -17,8 +21,8 @@ ISR(WDT_vect) { Sleepy::watchdogEvent(); } // interrupt handler for JeeLabs Slee
 #define network 210      // RF12 Network group
 #define freq RF12_433MHZ // Frequency of RFM12B module
 
-#define ONE_WIRE_BUS 10 // DS18B20 Temperature sensor is connected on D10
-#define ONE_WIRE_POWER 9 // DS18B20 Power pin is connected on pin D9
+#define ONE_WIRE_BUS 10 // DS18B20 Temperature sensor is connected on D10/ATtiny pin 13
+#define ONE_WIRE_POWER 9 // DS18B20 Power pin is connected on pin D9/ATtiny pin 12
 
 OneWire oneWire(ONE_WIRE_BUS); // Setup a oneWire instance
 
