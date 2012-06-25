@@ -11,3 +11,7 @@ TinyTX_DS18B20
 --------------
 With DS18B20 temperature sensor. 
 
+
+TinyTX_DHT22
+------------
+With DHT22 temperature & humidity sensor.
