@@ -10,7 +10,7 @@
 // Requires Arduino IDE with arduino-tiny core: http://code.google.com/p/arduino-tiny/
 //----------------------------------------------------------------------------------------------------------------------
 
-#include <DHT22.h> // https://github.com/ringerc/Arduino-DHT22
+#include <DHT22.h> // https://github.com/nathanchantrell/Arduino-DHT22
 #include <JeeLib.h> // https://github.com/jcw/jeelib
 
 ISR(WDT_vect) { Sleepy::watchdogEvent(); } // interrupt handler for JeeLabs Sleepy power saving
