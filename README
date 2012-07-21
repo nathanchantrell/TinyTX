@@ -15,3 +15,13 @@ With DS18B20 temperature sensor.
 TinyTX_DHT22
 ------------
 With DHT22 temperature & humidity sensor.
+
+
+TinyTX_TMP36
+------------
+With TMP36 Analogue Temperature Sensor.
+
+
+TinyTX_LDR_Meter  
+----------------
+With LDR to read LED pulses on electricity meter.
