@@ -3,7 +3,7 @@
 // By Nathan Chantrell. For hardware design see http://nathan.chantrell.net/tinytx
 //
 // Modified for power meter use by Troels. 
-// Using an LDR connected between the right two sensor pads (D10/pin 13 and GND) and a 4K7 resistor fitted
+// Using an LDR connected between the center and right sensor pads (D10/pin 13 and GND) and a 4K7 resistor fitted
 //
 // Licenced under the Creative Commons Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0) licence:
 // http://creativecommons.org/licenses/by-sa/3.0/
@@ -17,7 +17,6 @@ ISR(WDT_vect) { Sleepy::watchdogEvent(); } // interrupt handler for JeeLabs Slee
 
 static unsigned long last;
 static unsigned long watts;
-
 
 #define myNodeID 4      // RF12 node ID in the range 1-30
 #define network 210      // RF12 Network group
@@ -48,7 +47,7 @@ void setup() {
   last = millis();
 
   pinMode(9, OUTPUT); // set D9/ATtiny pin 12 as output
-  digitalWrite(9, LOW); // and bring low
+  digitalWrite(9, HIGH); // and set high
   
 }
 
