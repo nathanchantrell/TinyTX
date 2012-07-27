@@ -25,3 +25,9 @@ With TMP36 Analogue Temperature Sensor.
 TinyTX_LDR_Meter  
 ----------------
 With LDR to read LED pulses on electricity meter.
+
+
+TinyTX_RX_Simple
+----------------
+A simple receive example, outputing received data on the serial monitor.
+For a Nanode sketch to upload to emoncms see: https://github.com/nathanchantrell/NanodeRF_emoncms
