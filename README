@@ -3,8 +3,7 @@ TinyTX - An ATtiny84 and RFM12B wireless sensor node
 
 By Nathan Chantrell. For hardware design see http://nathan.chantrell.net/tinytx
 
-Licenced under the Creative Commons Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0) licence:
-http://creativecommons.org/licenses/by-sa/3.0/
+Licenced under the Creative Commons Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0) licence: http://creativecommons.org/licenses/by-sa/3.0/
 
 
 TinyTX_DS18B20
@@ -28,13 +27,27 @@ With LDR to read LED pulses on electricity meter.
 
 
 TinyTX_LDR 
-----------------
+----------
 With LDR to read light levels.
+
+
+TinyTX_Water
+------------
+A leak/flood sensor using the TinyTX, a 100K resistor and two wire probes. See below for a receiver.
+
+
+TinyTX_Water_RX
+---------------
+Receiver example for the above leak/flood sensor, can be run on a Tiny TX and brings D9 high on a water alarm and D10 high on a low battery alarm. Could be used to trigger an external device, sound a buzzer etc. Same code could also be used on a Nanode/WiNode etc.
 
 
 TinyTX_RX_Simple
 ----------------
-A simple receive example, outputing received data on the serial monitor.
+A simple receive example, outputing received data on the serial monitor. 
+
+
+TinyTX_NanodeRF_emoncms
+-----------------------
 For a Nanode sketch to upload to emoncms see: https://github.com/nathanchantrell/NanodeRF_emoncms
 
 
