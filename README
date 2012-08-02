@@ -27,6 +27,11 @@ TinyTX_LDR_Meter
 With LDR to read LED pulses on electricity meter.
 
 
+TinyTX_LDR 
+----------------
+With LDR to read light levels.
+
+
 TinyTX_RX_Simple
 ----------------
 A simple receive example, outputing received data on the serial monitor.
