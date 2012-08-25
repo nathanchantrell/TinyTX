@@ -1,0 +1,36 @@
+MAX1284 Multiple TX to emoncms
+------------------------------
+For the MAX1284 Internet Gateway http://max1284.homelabs.org.uk/
+Receives data from multiple TinyTX sensors and/or emonTX and uploads to an emoncms server
+By Nathan Chantrell. http://zorg.org/
+Licenced under GNU GPL V3
+Based on emonbase multiple emontx example for ethershield by Trystan Lea and Glyn Hudson at OpenEnergyMonitor.org
+
+
+Requires modification to Jeelib library as follows:
+
+In RF12.cpp
+
+Add new pin definitions for the MAX1284:
+
+  #elif defined(__AVR_ATmega1284P__)
+
+  #define RFM_IRQ     2
+  #define SS_DDR      DDRC
+  #define SS_PORT     PORTC
+  #define SS_BIT      5
+
+  #define SPI_SS      4     // PB4, pin 5
+  #define SPI_MOSI    5     // PB5, pin 6
+  #define SPI_MISO    6     // PB6, pin 7
+  #define SPI_SCK     7     // PB7, pin 8
+
+Change attachInterrupt from 0 to 2 ie:
+
+  #else
+      if ((nodeid & NODE_ID) != 0)
+          attachInterrupt(2, rf12_interrupt, LOW);
+      else
+          detachInterrupt(2);
+  #endif
+
