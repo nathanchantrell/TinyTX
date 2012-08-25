@@ -48,7 +48,12 @@ A simple receive example, outputing received data on the serial monitor.
 
 TinyTX_NanodeRF_emoncms
 -----------------------
-For a Nanode sketch to upload to emoncms see: https://github.com/nathanchantrell/NanodeRF_emoncms
+For a Nanode sketch to upload multiple nodes to emoncms see: https://github.com/nathanchantrell/NanodeRF_emoncms
+
+
+TinyTX_MAX1284_emoncms
+----------------------
+For the upcoming MAX1284 internet gateway (http://max1284.homelabs.org.uk/) uploads multiple nodes to emoncms
 
 
 TinyTX_NanodeRF_Cosm
