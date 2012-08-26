@@ -2,6 +2,7 @@
 // MAX1284 Multiple TX to emoncms
 // For the MAX1284 Internet Gateway http://max1284.homelabs.org.uk/
 // Receives data from multiple TinyTX sensors and/or emonTX and uploads to an emoncms server.
+// Gets NTP time once an hour and transmits for GLCD displays
 // See README for required modifications to Jeelib library.
 // By Nathan Chantrell. http://zorg.org/
 // Licenced under GNU GPL V3
@@ -13,6 +14,7 @@
 #include <SPI.h>
 #include <JeeLib.h>          // https://github.com/jcw/jeelib
 #include <Ethernet52.h>      // https://bitbucket.org/homehack/ethernet52/src
+#include <EthernetUdp.h>
  
 // Fixed RF12 settings
 #define MYNODE 30            // node ID 30 reserved for base station
@@ -22,19 +24,35 @@
 // emoncms settings, change these settings to match your own setup
 #define SERVER  "tardis.chantrell.net";              // emoncms server
 #define EMONCMS "emoncms"                            // location of emoncms on server, blank if at root
-#define APIKEY  "b872449aa3ba74458383a798b740a378"   // API write key 
-//#define APIKEY  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"   // API write key 
+#define APIKEY  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"   // API write key 
+
+// NTP Stuff
+#define USE_NTP                         // Comment out to disable NTP transmit function
+#define NTP_PERIOD 60                   // How often to get & transmit the time in minutes
+#define UDP_PORT 8888                   // Local port to listen for UDP packets
+#define NTP_PACKET_SIZE 48              // NTP time stamp is in the first 48 bytes of the message
+IPAddress timeServer(192, 43, 244, 18); // time.nist.gov NTP server
+byte packetBuffer[ NTP_PACKET_SIZE];    // Buffer to hold incoming and outgoing packets 
+EthernetUDP Udp;                        // A UDP instance to let us send and receive packets over UDP
+unsigned long time60s = -50000;         // for time transmit function
 
 #define ledPin 15            // MAX1284 LED on Pin 15 / PD7
 
-// The RF12 data payload
+// The RF12 data payload received
 typedef struct
 {
-  int data1;		    // received data 1
-  int supplyV;              // voltage
-  int data2;		    // received data 2
+  int data1;		 // received data 1
+  int supplyV;           // voltage
+  int data2;		 // received data 2
 } Payload;
 Payload rx; 
+
+// The RF12 data payload to be sent, used to send server time to GLCD display
+typedef struct
+{
+  int hour, mins, sec;  // time
+} PayloadOut;
+PayloadOut ntp; 
 
 // PacketBuffer class used to generate the json string that is send via ethernet - JeeLabs
 class PacketBuffer : public Print {
@@ -100,11 +118,22 @@ void setup () {
 
   rf12_initialize(MYNODE,freq,group);     // initialise the RFM12B
   lastRF = millis()-40000;                // Forces the a send straight away
-
+  
+  #ifdef USE_NTP
+  Udp.begin(UDP_PORT);  // Start UDP for NTP client
+  #endif
+  
   digitalWrite(ledPin,LOW);               // Turn LED off to indicate setup has finished
 }
 
 void loop () {
+  
+  #ifdef USE_NTP
+  if ((millis()-time60s)>60000){          // Send NTP ime once a minute
+    getTime();
+    time60s = millis();
+  } 
+  #endif
 
 //--------------------------------------------------------------------  
 // On data receieved from rf12
@@ -117,9 +146,14 @@ void loop () {
    int nodeID = rf12_hdr & 0x1F;          // extract node ID from received packet
    rx=*(Payload*) rf12_data;              // Get the payload
    
+   #ifdef DEBUG
+    Serial.print("Data received from Node ");
+    Serial.println(nodeID);
+   #endif
+   
    if (RF12_WANTS_ACK) {                  // Send ACK if requested
      #ifdef DEBUG
-      Serial.println(" -> ack");
+      Serial.println("-> ack sent");
      #endif
      rf12_sendStart(RF12_ACK_REPLY, 0, 0);
    }
@@ -149,12 +183,10 @@ void loop () {
    dataReady = 1;                         // Ok, data is ready
    lastRF = millis();                     // reset lastRF timer
 
-   #ifdef DEBUG
-    Serial.println("Data received");
-   #endif
   }
 
 // If no data is recieved from rf12 module the server is updated every 30s with RFfail = 1 indicator for debugging
+
   if ((millis()-lastRF)>30000)
   {
     lastRF = millis();                    // reset lastRF timer
@@ -197,4 +229,71 @@ void loop () {
   }
 
 }
+
+//--------------------------------------------------------------------
+// Get NTP time, convert from unix time and send via RF
+//--------------------------------------------------------------------
+
+  void getTime() {
+    #ifdef DEBUG  
+    Serial.println("Getting NTP Time");
+    #endif
+
+    sendNTPpacket(timeServer);                                           // Send an NTP packet to a time server
+    delay(1000);                                                         // Wait to see if a reply is available
+
+    if ( Udp.parsePacket() ) {                                           // We've received a packet, read the data from it
+      Udp.read(packetBuffer,NTP_PACKET_SIZE);                            // read the packet into the buffer
+      unsigned long highWord = word(packetBuffer[40], packetBuffer[41]); // Timestamp starts at byte 40 and is four bytes,
+      unsigned long lowWord = word(packetBuffer[42], packetBuffer[43]);  // or two words, long. First, esxtract the two words:
+      unsigned long secsSince1900 = highWord << 16 | lowWord;            // Combine into a long integer
+
+      // Now convert NTP time into everyday time:
+      const unsigned long seventyYears = 2208988800UL;                   // Unix time starts on 1/1/1970
+      unsigned long epoch = secsSince1900 - seventyYears;                // Subtract seventy years:
+      ntp.hour = ((epoch  % 86400L) / 3600);                             // 86400 equals secs per day
+      ntp.mins = ((epoch  % 3600) / 60);                                 // 3600 equals secs per minute
+      ntp.sec = (epoch %60);                                             // seconds
+
+      // Send the time via RF
+      int i = 0; while (!rf12_canSend() && i<10) {rf12_recvDone(); i++;}
+      rf12_sendStart(0, &ntp, sizeof ntp);                        
+      rf12_sendWait(0);
+      #ifdef DEBUG  
+      Serial.print("Time sent: ");
+      Serial.print(ntp.hour);
+      Serial.print(":");
+      if ( ntp.mins < 10 ) { Serial.print('0'); }
+      Serial.print(ntp.mins);
+      Serial.print(":");
+      if ( ntp.sec < 10 ) { Serial.print('0'); }
+      Serial.println(ntp.sec);
+      #endif
+    }
+  }
+
+//--------------------------------------------------------------------
+// send an NTP request to the time server at the given address 
+//--------------------------------------------------------------------
+
+  unsigned long sendNTPpacket(IPAddress& address) {
+    memset(packetBuffer, 0, NTP_PACKET_SIZE); // set all bytes in the buffer to 0
+
+    // Initialize values needed to form NTP request
+    packetBuffer[0] = 0b11100011;   // LI, Version, Mode
+    packetBuffer[1] = 0;            // Stratum, or type of clock
+    packetBuffer[2] = 6;            // Polling Interval
+    packetBuffer[3] = 0xEC;         // Peer Clock Precision
+
+    // 8 bytes of zero for Root Delay & Root Dispersion
+    packetBuffer[12]  = 49; 
+    packetBuffer[13]  = 0x4E;
+    packetBuffer[14]  = 49;
+    packetBuffer[15]  = 52;
+
+    // Send a packet requesting a timestamp: 		   
+    Udp.beginPacket(address, 123); //NTP requests are to port 123
+    Udp.write(packetBuffer,NTP_PACKET_SIZE);
+    Udp.endPacket(); 
+  }
 
