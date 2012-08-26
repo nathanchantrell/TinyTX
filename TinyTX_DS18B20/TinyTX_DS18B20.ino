@@ -73,7 +73,7 @@ void loop() {
 
   rfwrite(); // Send data via RF 
 
-  Sleepy::loseSomeTime(5000); //JeeLabs power save function: enter low power mode for 60 seconds (valid range 16-65000 ms)
+  Sleepy::loseSomeTime(60000); //JeeLabs power save function: enter low power mode for 60 seconds (valid range 16-65000 ms)
 
 }
 
