@@ -244,8 +244,8 @@ void loop () {
 
     if ( Udp.parsePacket() ) {                                           // We've received a packet, read the data from it
       Udp.read(packetBuffer,NTP_PACKET_SIZE);                            // read the packet into the buffer
-      unsigned long highWord = word(packetBuffer[40], packetBuffer[41]); // Timestamp starts at byte 40 and is four bytes,
-      unsigned long lowWord = word(packetBuffer[42], packetBuffer[43]);  // or two words, long. First, esxtract the two words:
+      unsigned long highWord = word(packetBuffer[40], packetBuffer[41]); // Timestamp starts at byte 40 & is 4 bytes/2 words
+      unsigned long lowWord = word(packetBuffer[42], packetBuffer[43]);  // Extract the two words
       unsigned long secsSince1900 = highWord << 16 | lowWord;            // Combine into a long integer
 
       // Now convert NTP time into everyday time:
