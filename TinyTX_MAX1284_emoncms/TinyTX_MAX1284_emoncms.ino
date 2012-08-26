@@ -34,7 +34,7 @@
 IPAddress timeServer(192, 43, 244, 18); // time.nist.gov NTP server
 byte packetBuffer[ NTP_PACKET_SIZE];    // Buffer to hold incoming and outgoing packets 
 EthernetUDP Udp;                        // A UDP instance to let us send and receive packets over UDP
-unsigned long time60s = -50000;         // for time transmit function
+unsigned long timeTX = -50000;          // for time transmit function
 
 #define ledPin 15            // MAX1284 LED on Pin 15 / PD7
 
@@ -129,9 +129,9 @@ void setup () {
 void loop () {
   
   #ifdef USE_NTP
-  if ((millis()-time60s)>60000){          // Send NTP ime once a minute
+  if ((millis()-timeTX)>(NTP_PERIOD*60000)){    // Send NTP time
     getTime();
-    time60s = millis();
+    timeTX = millis();
   } 
   #endif
 
