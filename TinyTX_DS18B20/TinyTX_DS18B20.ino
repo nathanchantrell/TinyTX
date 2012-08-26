@@ -53,7 +53,7 @@ void setup() {
   
   PRR = bit(PRTIM1); // only keep timer 0 going
   
-  ADCSRA &= ~ bit(ADEN); bitSet(PRR, PRADC); // Disable the ADC to save power as not used
+  ADCSRA &= ~ bit(ADEN); bitSet(PRR, PRADC); // Disable the ADC to save power
 
 }
 
@@ -121,4 +121,5 @@ void loop() {
    result |= ADCH<<8;
    result = 1126400L / result; // Back-calculate Vcc in mV
    return result;
+   ADCSRA &= ~ bit(ADEN); bitSet(PRR, PRADC); // Disable the ADC to save power
 } 
