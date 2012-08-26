@@ -8,7 +8,7 @@
 // Based on emonbase multiple emontx example for ethershield by Trystan Lea and Glyn Hudson at OpenEnergyMonitor.org
 //------------------------------------------------------------------------------------------------------------------
 
-//#define DEBUG                // uncomment for serial output (57600 baud)
+#define DEBUG                // uncomment for serial output (57600 baud)
 
 #include <SPI.h>
 #include <JeeLib.h>          // https://github.com/jcw/jeelib
@@ -22,7 +22,8 @@
 // emoncms settings, change these settings to match your own setup
 #define SERVER  "tardis.chantrell.net";              // emoncms server
 #define EMONCMS "emoncms"                            // location of emoncms on server, blank if at root
-#define APIKEY  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"   // API write key 
+#define APIKEY  "b872449aa3ba74458383a798b740a378"   // API write key 
+//#define APIKEY  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"   // API write key 
 
 #define ledPin 15            // MAX1284 LED on Pin 15 / PD7
 
@@ -115,6 +116,13 @@ void loop () {
    digitalWrite(ledPin,HIGH);             // Turn LED on    
    int nodeID = rf12_hdr & 0x1F;          // extract node ID from received packet
    rx=*(Payload*) rf12_data;              // Get the payload
+   
+   if (RF12_WANTS_ACK) {                  // Send ACK if requested
+     #ifdef DEBUG
+      Serial.println(" -> ack");
+     #endif
+     rf12_sendStart(RF12_ACK_REPLY, 0, 0);
+   }
    
 // JSON creation: format: {key1:value1,key2:value2} and so on
     
