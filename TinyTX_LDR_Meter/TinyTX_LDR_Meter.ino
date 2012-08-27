@@ -20,7 +20,10 @@ static unsigned long watts;
 
 #define myNodeID 4      // RF12 node ID in the range 1-30
 #define network 210      // RF12 Network group
-#define freq RF12_868MHZ // Frequency of RFM12B module
+#define freq RF12_433MHZ // Frequency of RFM12B module
+#define RETRY_PERIOD 5    // How soon to retry (in seconds) if ACK didn't come in
+#define RETRY_LIMIT 5     // Maximum number of times to retry
+#define ACK_TIME 10       // Number of milliseconds to wait for an ack
 
 #define powerPin A0       // LDR Vout connected to A0 (ATtiny pin 13)
 int powerReading;         // Analogue reading from the sensor
@@ -92,13 +95,30 @@ void loop() {
 // Send payload data via RF
 //--------------------------------------------------------------------------------------------------
  static void rfwrite(){
-   rf12_sleep(-1);     //wake up RF module
-   while (!rf12_canSend())
-   rf12_recvDone();
-   rf12_sendStart(0, &tinytx, sizeof tinytx); 
-   rf12_sendWait(2);    //wait for RF to finish sending while in standby mode
-   rf12_sleep(0);    //put RF module to sleep
-}
+   for (byte i = 0; i <= RETRY_LIMIT; ++i) {  // tx and wait for ack up to RETRY_LIMIT times
+     rf12_sleep(-1);              // Wake up RF module
+      while (!rf12_canSend())
+      rf12_recvDone();
+      rf12_sendStart(RF12_HDR_ACK, &tinytx, sizeof tinytx); 
+      rf12_sendWait(2);           // Wait for RF to finish sending while in standby mode
+      byte acked = waitForAck();
+      rf12_sleep(0);              // Put RF module to sleep
+      if (acked) { return; }
+  
+   Sleepy::loseSomeTime(RETRY_PERIOD * 1000);     // If no ack received wait and try again
+   }
+ }
+
+// Wait a few milliseconds for proper ACK
+ static byte waitForAck() {
+   MilliTimer ackTimer;
+   while (!ackTimer.poll(ACK_TIME)) {
+     if (rf12_recvDone() && rf12_crc == 0 &&
+        rf12_hdr == (RF12_HDR_DST | RF12_HDR_CTL | myNodeID))
+        return 1;
+     }
+   return 0;
+ }
 
 //--------------------------------------------------------------------------------------------------
 // Read current supply voltage

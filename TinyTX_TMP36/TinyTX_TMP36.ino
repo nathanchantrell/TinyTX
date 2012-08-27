@@ -20,6 +20,9 @@ ISR(WDT_vect) { Sleepy::watchdogEvent(); } // interrupt handler for JeeLabs Slee
 #define myNodeID 1      // RF12 node ID in the range 1-30
 #define network 210      // RF12 Network group
 #define freq RF12_433MHZ // Frequency of RFM12B module
+#define RETRY_PERIOD 5    // How soon to retry (in seconds) if ACK didn't come in
+#define RETRY_LIMIT 5     // Maximum number of times to retry
+#define ACK_TIME 10       // Number of milliseconds to wait for an ack
 
 #define tempPin A0       // TMP36 Vout connected to A0/ATtiny pin 13
 #define tempPower 9      // TMP36 Power pin is connected on pin D9/ATtiny pin 12
@@ -35,7 +38,7 @@ int tempReading;         // Analogue reading from the sensor
   	  int supplyV;	// Supply voltage
  } Payload;
 
- Payload temptx;
+ Payload tinytx;
 
 //########################################################################################################################
 
@@ -72,9 +75,9 @@ void loop() {
 
   double temperatureC = (voltage - 500) / 10; // Convert to temperature in degrees C. 
 
-  temptx.temp = temperatureC * 100; // Convert temperature to an integer, reversed at receiving end
+  tinytx.temp = temperatureC * 100; // Convert temperature to an integer, reversed at receiving end
   
-  temptx.supplyV = readVcc(); // Get supply voltage
+  tinytx.supplyV = readVcc(); // Get supply voltage
 
   rfwrite(); // Send data via RF 
 
@@ -86,13 +89,30 @@ void loop() {
 // Send payload data via RF
 //--------------------------------------------------------------------------------------------------
  static void rfwrite(){
-   rf12_sleep(-1);     //wake up RF module
-   while (!rf12_canSend())
-   rf12_recvDone();
-   rf12_sendStart(0, &temptx, sizeof temptx); 
-   rf12_sendWait(2);    //wait for RF to finish sending while in standby mode
-   rf12_sleep(0);    //put RF module to sleep
-}
+   for (byte i = 0; i <= RETRY_LIMIT; ++i) {  // tx and wait for ack up to RETRY_LIMIT times
+     rf12_sleep(-1);              // Wake up RF module
+      while (!rf12_canSend())
+      rf12_recvDone();
+      rf12_sendStart(RF12_HDR_ACK, &tinytx, sizeof tinytx); 
+      rf12_sendWait(2);           // Wait for RF to finish sending while in standby mode
+      byte acked = waitForAck();
+      rf12_sleep(0);              // Put RF module to sleep
+      if (acked) { return; }
+  
+   Sleepy::loseSomeTime(RETRY_PERIOD * 1000);     // If no ack received wait and try again
+   }
+ }
+
+// Wait a few milliseconds for proper ACK
+ static byte waitForAck() {
+   MilliTimer ackTimer;
+   while (!ackTimer.poll(ACK_TIME)) {
+     if (rf12_recvDone() && rf12_crc == 0 &&
+        rf12_hdr == (RF12_HDR_DST | RF12_HDR_CTL | myNodeID))
+        return 1;
+     }
+   return 0;
+ }
 
 //--------------------------------------------------------------------------------------------------
 // Read current supply voltage

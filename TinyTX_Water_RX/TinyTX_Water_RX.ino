@@ -55,6 +55,19 @@ void loop() {
 
   if (nodeID == tinyTXNode) {
    rx = *(Payload*) rf12_data;
+   
+   #ifdef DEBUG
+    Serial.print("Data received from Node ");
+    Serial.println(nodeID);
+   #endif
+   
+   if (RF12_WANTS_ACK) {                  // Send ACK if requested
+     #ifdef DEBUG
+      Serial.println("-> ack sent");
+     #endif
+     rf12_sendStart(RF12_ACK_REPLY, 0, 0);
+   }
+   
    int alarm = rx.rxD;
    int millivolts = rx.supplyV;
 
