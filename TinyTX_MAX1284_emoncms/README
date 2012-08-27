@@ -35,9 +35,9 @@ AND CHANGE:
 
   #else
       if ((nodeid & NODE_ID) != 0)
-          attachInterrupt(2, rf12_interrupt, LOW);
+          attachInterrupt(0, rf12_interrupt, LOW);
       else
-          detachInterrupt(2);
+          detachInterrupt(0);
   #endif
 
 TO:
