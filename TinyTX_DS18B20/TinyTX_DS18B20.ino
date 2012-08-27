@@ -20,7 +20,7 @@ ISR(WDT_vect) { Sleepy::watchdogEvent(); } // interrupt handler for JeeLabs Slee
 #define myNodeID 1        // RF12 node ID in the range 1-30
 #define network 210       // RF12 Network group
 #define freq RF12_433MHZ  // Frequency of RFM12B module
-#define RETRY_PERIOD 10   // How soon to retry (in seconds) if ACK didn't come in
+#define RETRY_PERIOD 5    // How soon to retry (in seconds) if ACK didn't come in
 #define RETRY_LIMIT 5     // Maximum number of times to retry
 #define ACK_TIME 10       // Number of milliseconds to wait for an ack
 
@@ -81,7 +81,7 @@ void loop() {
 // Send payload data via RF
 //-------------------------------------------------------------------------------------------------
  static void rfwrite(){
-   for (byte i = 0; i < RETRY_LIMIT; ++i) {  // tx and wait for ack up to RETRY_LIMIT times
+   for (byte i = 0; i <= RETRY_LIMIT; ++i) {  // tx and wait for ack up to RETRY_LIMIT times
      rf12_sleep(-1);              // Wake up RF module
       while (!rf12_canSend())
       rf12_recvDone();
@@ -91,7 +91,7 @@ void loop() {
       rf12_sleep(0);              // Put RF module to sleep
       if (acked) { return; }
   
-   delay(RETRY_PERIOD * 100);     // If no ack received wait and try again
+   Sleepy::loseSomeTime(RETRY_PERIOD * 1000);     // If no ack received wait and try again
    }
  }
 
