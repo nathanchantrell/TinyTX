@@ -7,7 +7,7 @@
 // Based on emonbase multiple emontx example for ethershield by Trystan Lea and Glyn Hudson at OpenEnergyMonitor.org
 //------------------------------------------------------------------------------------------------------------------------
 
-//#define DEBUG                // uncomment for serial output (57600 baud)
+#define DEBUG                // uncomment for serial output (57600 baud)
 
 #include <JeeLib.h>          // https://github.com/jcw/jeelib
 #include <EtherCard.h>       // https://github.com/jcw/ethercard/tree/development  dev version with DHCP fixes
@@ -128,6 +128,18 @@ void setup () {
    int nodeID = rf12_hdr & 0x1F;          // extract node ID from received packet
    rx=*(Payload*) rf12_data;              // Get the payload
    
+   #ifdef DEBUG
+    Serial.print("Data received from Node ");
+    Serial.println(nodeID);
+   #endif
+   
+   if (RF12_WANTS_ACK) {                  // Send ACK if requested
+     #ifdef DEBUG
+      Serial.println("-> ack sent");
+     #endif
+     rf12_sendStart(RF12_ACK_REPLY, 0, 0);
+   }
+   
 // JSON creation: format: {key1:value1,key2:value2} and so on
     
    str.reset();                           // Reset json string     
@@ -153,9 +165,6 @@ void setup () {
    dataReady = 1;                         // Ok, data is ready
    lastRF = millis();                     // reset lastRF timer
 
-   #ifdef DEBUG
-    Serial.println("Data received");
-   #endif
   }
 
 // If no data is recieved from rf12 module the server is updated every 30s with RFfail = 1 indicator for debugging
