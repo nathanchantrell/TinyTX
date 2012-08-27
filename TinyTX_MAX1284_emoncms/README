@@ -2,20 +2,24 @@ MAX1284 Multiple TX to emoncms
 ------------------------------
 For the MAX1284 Internet Gateway http://max1284.homelabs.org.uk/
 Receives data from multiple TinyTX sensors and/or emonTX and uploads to an emoncms server
+Optional feature to gets NTP time every so often and transmit for remote GLCD displays
 By Nathan Chantrell. http://zorg.org/
 Licenced under GNU GPL V3
 Based on emonbase multiple emontx example for ethershield by Trystan Lea and Glyn Hudson at OpenEnergyMonitor.org
 
 
-Requires modification to Jeelib library as follows:
+Requires modification to Jeelib library as follows or use version here: https://github.com/nathanchantrell/jeelib
+
 
 In RF12.cpp
 
 Add new pin definitions for the MAX1284:
 
+
   #elif defined(__AVR_ATmega1284P__)
 
-  #define RFM_IRQ     2
+  #define RFM_IRQ     2     // The PIN the IRQ is on
+  #define RFM_IRQ_NO  2     // The IRQ number
   #define SS_DDR      DDRC
   #define SS_PORT     PORTC
   #define SS_BIT      5
@@ -25,7 +29,9 @@ Add new pin definitions for the MAX1284:
   #define SPI_MISO    6     // PB6, pin 7
   #define SPI_SCK     7     // PB7, pin 8
 
-Change attachInterrupt from 0 to 2 ie:
+
+
+AND CHANGE:
 
   #else
       if ((nodeid & NODE_ID) != 0)
@@ -33,4 +39,21 @@ Change attachInterrupt from 0 to 2 ie:
       else
           detachInterrupt(2);
   #endif
+
+TO:
+
+  #else
+      #if RFM_IRQ_NO  // If IRQ number is defined use that, if not use IRQ0
+      if ((nodeid & NODE_ID) != 0)
+          attachInterrupt(RFM_IRQ_NO, rf12_interrupt, LOW);
+      else
+          detachInterrupt(RFM_IRQ_NO);
+      #else
+      if ((nodeid & NODE_ID) != 0)
+          attachInterrupt(0, rf12_interrupt, LOW);
+      else
+          detachInterrupt(0);
+      #endif
+  #endif
+
 
