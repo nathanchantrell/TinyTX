@@ -2,13 +2,12 @@
 // TinyTX - An ATtiny84 and RFM12B Wireless Sensor Node
 // By Nathan Chantrell. For hardware design see http://nathan.chantrell.net/tinytx
 //
-// Using a reed switch to trigger a pin change interrupt to wake the sensor
+// Detect a normally closed reed switch opening and closing with pin change interrupt to wake from sleep.
 //
 // Licenced under the Creative Commons Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0) licence:
 // http://creativecommons.org/licenses/by-sa/3.0/
 //
 // Requires Arduino IDE with arduino-tiny core: http://code.google.com/p/arduino-tiny/
-// and small change to OneWire library, see: http://arduino.cc/forum/index.php/topic,91491.msg687523.html#msg687523
 //----------------------------------------------------------------------------------------------------------------------
 
 #include <JeeLib.h> // https://github.com/jcw/jeelib
@@ -24,15 +23,15 @@ ISR(WDT_vect) { Sleepy::watchdogEvent(); } // interrupt handler for JeeLabs Slee
 #define RETRY_LIMIT 5     // Maximum number of times to retry
 #define ACK_TIME 10       // Number of milliseconds to wait for an ack
 
-#define SW_PIN 10         // Pin the switch is on D10/ATtiny pin 13
+#define SW_PIN 10         // Reed switch connected from ground to this pin (D10/ATtiny pin 13)
 
 //########################################################################################################################
 //Data Structure to be sent
 //########################################################################################################################
 
  typedef struct {
-  	  int switchT;	// Switch Trigger
-  	  int supplyV;	// Supply voltage
+  	  int switchState;  // Switch state
+  	  int supplyV;      // Supply voltage
  } Payload;
 
  Payload tinytx;
@@ -61,8 +60,15 @@ void wakeUp(){}
 
 void loop() {
   
-  tinytx.switchT = millis(); // testing
-   
+  int switchState = digitalRead(SW_PIN); // Read the state of the reed switch
+  
+  if (switchState == LOW) {              // Door/window is open
+      tinytx.switchState = 1;            // 1 indicates open
+  }
+  else {                                 // Door/window is closed
+      tinytx.switchState = 0;            // 0 indicates closed
+  } 
+     
   tinytx.supplyV = readVcc(); // Get supply voltage
 
   rfwrite(); // Send data via RF 
