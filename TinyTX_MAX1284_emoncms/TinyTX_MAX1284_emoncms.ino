@@ -22,19 +22,19 @@
 #define group 210            // network group 
 
 // emoncms settings, change these settings to match your own setup
-#define SERVER  "tardis.chantrell.net";              // emoncms server
+#define SERVER  "www.chantrell.net";              // emoncms server
 #define EMONCMS "emoncms"                            // location of emoncms on server, blank if at root
 #define APIKEY  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"   // API write key 
 
 // NTP Stuff
-#define USE_NTP                         // Comment out to disable NTP transmit function
-#define NTP_PERIOD 60                   // How often to get & transmit the time in minutes
-#define UDP_PORT 8888                   // Local port to listen for UDP packets
-#define NTP_PACKET_SIZE 48              // NTP time stamp is in the first 48 bytes of the message
-IPAddress timeServer(192, 43, 244, 18); // time.nist.gov NTP server
-byte packetBuffer[ NTP_PACKET_SIZE];    // Buffer to hold incoming and outgoing packets 
-EthernetUDP Udp;                        // A UDP instance to let us send and receive packets over UDP
-unsigned long timeTX = -50000;          // for time transmit function
+#define USE_NTP                           // Comment out to disable NTP transmit function
+#define NTP_PERIOD 60                     // How often to get & transmit the time in minutes
+#define UDP_PORT 8888                     // Local port to listen for UDP packets
+#define NTP_PACKET_SIZE 48                // NTP time stamp is in the first 48 bytes of the message
+IPAddress timeServer(192, 43, 244, 18);   // time.nist.gov NTP server
+byte packetBuffer[ NTP_PACKET_SIZE];      // Buffer to hold incoming and outgoing packets 
+EthernetUDP Udp;                          // A UDP instance to let us send and receive packets over UDP
+unsigned long timeTX = -NTP_PERIOD*60000; // for time transmit function
 
 #define ledPin 15            // MAX1284 LED on Pin 15 / PD7
 
@@ -126,6 +126,10 @@ void setup () {
   digitalWrite(ledPin,LOW);               // Turn LED off to indicate setup has finished
 }
 
+//--------------------------------------------------------------------
+// Loop
+//--------------------------------------------------------------------
+
 void loop () {
   
   #ifdef USE_NTP
@@ -211,7 +215,7 @@ void loop () {
 
    // Send the data  
    if (client.connect(server, 80)) {
-    client.print("GET "); client.print(url); client.print(str.buf); client.println();
+    client.print("GET http://"); client.print(server); client.print(url); client.print(str.buf); client.println();
     delay(200);
     client.stop();
      
@@ -239,13 +243,13 @@ void loop () {
     Serial.println("Getting NTP Time");
     #endif
 
-    sendNTPpacket(timeServer);                                           // Send an NTP packet to a time server
-    delay(1000);                                                         // Wait to see if a reply is available
+    sendNTPpacket(timeServer);                                           // Send NTP packet to time server
+    delay(1000);                                                         // Wait for reply
 
-    if ( Udp.parsePacket() ) {                                           // We've received a packet, read the data from it
-      Udp.read(packetBuffer,NTP_PACKET_SIZE);                            // read the packet into the buffer
-      unsigned long highWord = word(packetBuffer[40], packetBuffer[41]); // Timestamp starts at byte 40 & is 4 bytes/2 words
-      unsigned long lowWord = word(packetBuffer[42], packetBuffer[43]);  // Extract the two words
+    if ( Udp.parsePacket() ) {                                           // Packet received
+      Udp.read(packetBuffer,NTP_PACKET_SIZE);                            // Read packet into the buffer
+      unsigned long highWord = word(packetBuffer[40], packetBuffer[41]); // Timestamp starts at byte 40 & is 4 bytes
+      unsigned long lowWord = word(packetBuffer[42], packetBuffer[43]);  // or 2 words. Extract the two words.
       unsigned long secsSince1900 = highWord << 16 | lowWord;            // Combine into a long integer
 
       // Now convert NTP time into everyday time:
