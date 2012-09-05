@@ -15,6 +15,7 @@
 #include <JeeLib.h>          // https://github.com/jcw/jeelib
 #include <Ethernet52.h>      // https://bitbucket.org/homehack/ethernet52/src
 #include <EthernetUdp.h>
+#include <avr/wdt.h>
  
 // Fixed RF12 settings
 #define MYNODE 30            // node ID 30 reserved for base station
@@ -22,7 +23,7 @@
 #define group 210            // network group 
 
 // emoncms settings, change these settings to match your own setup
-#define SERVER  "www.chantrell.net";              // emoncms server
+#define SERVER  "www.chantrell.net";                 // emoncms server
 #define EMONCMS "emoncms"                            // location of emoncms on server, blank if at root
 #define APIKEY  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"   // API write key 
 
@@ -124,6 +125,9 @@ void setup () {
   #endif
   
   digitalWrite(ledPin,LOW);               // Turn LED off to indicate setup has finished
+  
+  wdt_enable(WDTO_8S);  // Enable the watchdog timer with an 8 second timeout
+    
 }
 
 //--------------------------------------------------------------------
@@ -131,6 +135,8 @@ void setup () {
 //--------------------------------------------------------------------
 
 void loop () {
+  
+  wdt_reset(); // Reset the watchdog timer
   
   #ifdef USE_NTP
   if ((millis()-timeTX)>(NTP_PERIOD*60000)){    // Send NTP time
@@ -146,9 +152,9 @@ void loop () {
   if (rf12_recvDone() && rf12_crc == 0 && (rf12_hdr & RF12_HDR_CTL) == 0) 
   {
 
-   digitalWrite(ledPin,HIGH);             // Turn LED on    
    int nodeID = rf12_hdr & 0x1F;          // extract node ID from received packet
    rx=*(Payload*) rf12_data;              // Get the payload
+   digitalWrite(ledPin,HIGH);             // Turn LED on    
    
    #ifdef DEBUG
     Serial.print("Data received from Node ");
@@ -219,16 +225,15 @@ void loop () {
     delay(200);
     client.stop();
      
-    digitalWrite(ledPin,LOW);           // Turn LED OFF
-     
     dataReady = 0;                      // reset data ready flag
-    } 
-    else { 
+   } 
+   else { 
      #ifdef DEBUG
      Serial.println("connection failed"); 
      #endif
-     delay(1000); // wait 1s before trying again 
-    }
+   }
+
+   digitalWrite(ledPin,LOW);           // Turn LED OFF
 
   }
 

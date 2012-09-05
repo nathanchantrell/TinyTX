@@ -8,10 +8,15 @@
 //------------------------------------------------------------------------------------------------------------------------
 
 #define DEBUG                // uncomment for serial output (57600 baud)
+#define OPTIBOOT             // Use watchdog timer (for optiboot bootloader only)
 
 #include <JeeLib.h>          // https://github.com/jcw/jeelib
 #include <EtherCard.h>       // https://github.com/jcw/ethercard/tree/development  dev version with DHCP fixes
 #include <NanodeMAC.h>       // https://github.com/thiseldo/NanodeMAC
+
+#ifdef OPTIBOOT
+#include <avr/wdt.h>
+#endif
 
 // Fixed RF12 settings
 #define MYNODE 30            // node ID 30 reserved for base station
@@ -19,9 +24,8 @@
 #define group 210            // network group 
 
 // emoncms settings, change these settings to match your own setup
-#define SERVER  "tardis.chantrell.net";              // emoncms server
+#define SERVER  "www.chantrell.net";              // emoncms server
 #define EMONCMS "emoncms"                            // location of emoncms on server, blank if at root
-#define APIKEY  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"   // API write key 
 
 #define greenLedPin 5           // NanodeRF Green LED on Pin 5
 #define redLedPin 6             // NanodeRF Red LED on Pin 6
@@ -113,10 +117,18 @@ void setup () {
   lastRF = millis()-40000;                  // Forces the a send straight away
   
   digitalWrite(redLedPin,HIGH);             // Turn red LED off to indicate setup has finished
+  
+  #ifdef OPTIBOOT
+  wdt_enable(WDTO_8S);   // Enable the watchdog timer with an 8 second timeout
+  #endif
 
 }
 
   void loop () {
+    
+  #ifdef OPTIBOOT
+  wdt_reset(); // Reset the watchdog timer
+  #endif
   
 //--------------------------------------------------------------------  
 // On data receieved from rf12
