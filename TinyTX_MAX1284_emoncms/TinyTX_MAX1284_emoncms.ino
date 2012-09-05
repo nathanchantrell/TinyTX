@@ -23,7 +23,8 @@
 #define group 210            // network group 
 
 // emoncms settings, change these settings to match your own setup
-#define SERVER  "www.chantrell.net";                 // emoncms server
+IPAddress server(192,168,0,21);                      // IP address of emoncms server
+#define HOSTNAME "www.chantrell.net"                 // Hostname of emoncms server
 #define EMONCMS "emoncms"                            // location of emoncms on server, blank if at root
 #define APIKEY  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"   // API write key 
 
@@ -90,6 +91,7 @@ void setup () {
   
   #ifdef DEBUG
     Serial.begin(57600);
+    Serial.println("-------------------------------------------------");
     Serial.println("MAX1284 Multiple TX to emoncms");
     Serial.print("Node: "); Serial.print(MYNODE); 
     Serial.print(" Freq: "); 
@@ -115,18 +117,20 @@ void setup () {
    Serial.print(".");
   }
   Serial.println();
+  Serial.println("-------------------------------------------------");
   #endif
 
   rf12_initialize(MYNODE,freq,group);     // initialise the RFM12B
-  lastRF = millis()-40000;                // Forces the a send straight away
   
   #ifdef USE_NTP
-  Udp.begin(UDP_PORT);  // Start UDP for NTP client
+  Udp.begin(UDP_PORT);                    // Start UDP for NTP client
   #endif
   
   digitalWrite(ledPin,LOW);               // Turn LED off to indicate setup has finished
   
-  wdt_enable(WDTO_8S);  // Enable the watchdog timer with an 8 second timeout
+  delay(1000);
+  
+  wdt_enable(WDTO_8S);                    // Enable the watchdog timer with an 8 second timeout
     
 }
 
@@ -141,7 +145,6 @@ void loop () {
   #ifdef USE_NTP
   if ((millis()-timeTX)>(NTP_PERIOD*60000)){    // Send NTP time
     getTime();
-    timeTX = millis();
   } 
   #endif
 
@@ -149,7 +152,7 @@ void loop () {
 // On data receieved from rf12
 //--------------------------------------------------------------------
 
-  if (rf12_recvDone() && rf12_crc == 0 && (rf12_hdr & RF12_HDR_CTL) == 0) 
+  if (dataReady==0 && rf12_recvDone() && rf12_crc == 0 && (rf12_hdr & RF12_HDR_CTL) == 0) 
   {
 
    int nodeID = rf12_hdr & 0x1F;          // extract node ID from received packet
@@ -157,6 +160,7 @@ void loop () {
    digitalWrite(ledPin,HIGH);             // Turn LED on    
    
    #ifdef DEBUG
+    Serial.println();
     Serial.print("Data received from Node ");
     Serial.println(nodeID);
    #endif
@@ -209,32 +213,62 @@ void loop () {
 // Send the data
 //--------------------------------------------------------------------
  
-  if (dataReady==1) {                     // If data is ready: send data
+  if (!client.connected() && dataReady==1) {     // If not connected and data is ready: send data
+
+
 
    #ifdef DEBUG
-    Serial.print("Sending to emoncms: ");
-    Serial.println(str.buf);
+    Serial.println("Connecting to server");
    #endif
-
-   char server[] = SERVER;    
-   String url = "/"EMONCMS"/api/post?apikey="APIKEY"&json=";
-
+   
+   wdt_reset(); // Reset the watchdog timer
+    
    // Send the data  
-   if (client.connect(server, 80)) {
-    client.print("GET http://"); client.print(server); client.print(url); client.print(str.buf); client.println();
-    delay(200);
-    client.stop();
-     
-    dataReady = 0;                      // reset data ready flag
-   } 
-   else { 
+   if (client.connect(server, 80)) {     // Connect to server
+
+    if (client.connected()) {            // If connected send data
+    
      #ifdef DEBUG
-     Serial.println("connection failed"); 
+      Serial.print("Sending to emoncms: ");
+      Serial.println(str.buf);
+     #endif
+   
+     // The HTTP GET request   
+     client.print("GET "); client.print("/"EMONCMS"/api/post.json?apikey="APIKEY"&json="); client.print(str.buf);       
+     client.println(" HTTP/1.1");
+     client.print("Host: ");
+     client.println(HOSTNAME);
+     client.print("User-Agent: MAX1284");
+     client.println("\r\n");
+ 
+     #ifdef DEBUG
+      Serial.println("Sent OK");
+     #endif
+
+     digitalWrite(ledPin,LOW);           // Turn LED OFF
+     dataReady = 0;                      // reset data ready flag
+
+    } 
+    else { // If not connected retry on next loop
+     #ifdef DEBUG
+     Serial.println("Retrying... ");
+     #endif
+    }
+
+
+   } 
+   else {   // We didn't get a connection to the server, will retry on next loop
+     #ifdef DEBUG
+     Serial.print("ERROR: Connection failed to ");
+     Serial.print(server);
+     Serial.println(", will retry");
      #endif
    }
 
-   digitalWrite(ledPin,LOW);           // Turn LED OFF
-
+   client.stop();  // Disconnect
+   #ifdef DEBUG
+    Serial.println("Disconnected");
+   #endif
   }
 
 }
@@ -245,6 +279,7 @@ void loop () {
 
   void getTime() {
     #ifdef DEBUG  
+    Serial.println();
     Serial.println("Getting NTP Time");
     #endif
 
@@ -252,6 +287,7 @@ void loop () {
     delay(1000);                                                         // Wait for reply
 
     if ( Udp.parsePacket() ) {                                           // Packet received
+      timeTX = millis();                                                 // Reset timer
       Udp.read(packetBuffer,NTP_PACKET_SIZE);                            // Read packet into the buffer
       unsigned long highWord = word(packetBuffer[40], packetBuffer[41]); // Timestamp starts at byte 40 & is 4 bytes
       unsigned long lowWord = word(packetBuffer[42], packetBuffer[43]);  // or 2 words. Extract the two words.
@@ -261,6 +297,7 @@ void loop () {
       const unsigned long seventyYears = 2208988800UL;                   // Unix time starts on 1/1/1970
       unsigned long epoch = secsSince1900 - seventyYears;                // Subtract seventy years:
       ntp.hour = ((epoch  % 86400L) / 3600);                             // 86400 equals secs per day
+      ntp.hour += 1;                                                     // TO DO: Implement something for BST
       ntp.mins = ((epoch  % 3600) / 60);                                 // 3600 equals secs per minute
       ntp.sec = (epoch %60);                                             // seconds
 
@@ -277,7 +314,15 @@ void loop () {
       Serial.print(":");
       if ( ntp.sec < 10 ) { Serial.print('0'); }
       Serial.println(ntp.sec);
+      Serial.println();
       #endif
+    } else
+    {
+      #ifdef DEBUG  
+      Serial.println("Didn't get reply from NTP server");
+      Serial.println();
+      #endif
+      timeTX = (millis()-30000); // try again in 30 seconds
     }
   }
 
