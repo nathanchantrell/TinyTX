@@ -8,7 +8,7 @@
 //------------------------------------------------------------------------------------------------------------------------
 
 #define DEBUG                // uncomment for serial output (57600 baud)
-#define OPTIBOOT             // Use watchdog timer (for optiboot bootloader only)
+//#define OPTIBOOT             // Use watchdog timer (for optiboot bootloader only)
 
 #include <JeeLib.h>          // https://github.com/jcw/jeelib
 #include <EtherCard.h>       // https://github.com/jcw/ethercard/tree/development  dev version with DHCP fixes
@@ -24,8 +24,13 @@
 #define group 210            // network group 
 
 // emoncms settings, change these settings to match your own setup
-#define SERVER  "www.chantrell.net";              // emoncms server
+#define SERVER  "tardis.chantrell.net"               // emoncms server
 #define EMONCMS "emoncms"                            // location of emoncms on server, blank if at root
+#define APIKEY  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"   // API write key
+
+// Time Transmit Stuff
+#define TIMETX_PERIOD 60                     // How often to get & transmit the time in minutes
+unsigned long timeTX = -TIMETX_PERIOD*60000; // for time transmit function
 
 #define greenLedPin 5           // NanodeRF Green LED on Pin 5
 #define redLedPin 6             // NanodeRF Red LED on Pin 6
@@ -75,8 +80,6 @@ PacketBuffer str;
   int dataReady=0;                         // is set to 1 when there is data ready to be sent
   unsigned long lastRF;                    // used to check for RF recieve failures
   int post_count;                          // used to count number of ethernet posts that dont recieve a reply
-  
-  unsigned long time60s = -50000;          // for time transmit function
 
 //--------------------------------------------------------------------
 // Setup
@@ -200,7 +203,7 @@ void setup () {
     Serial.println(str.buf);
    #endif
 
-   ether.browseUrl(PSTR("/"EMONCMS"/api/post?apikey="APIKEY"&json="), str.buf, website, my_callback);
+   ether.browseUrl(PSTR("http://"SERVER"/"EMONCMS"/api/post?apikey="APIKEY"&json="), str.buf, website, my_callback);
 
    digitalWrite(greenLedPin,HIGH);        // Turn green LED OFF
      
@@ -227,18 +230,22 @@ static void my_callback (byte status, word off, word len) {
   nanode.sec = atoi(val);
 
 // Send time once a minute
-  if (((millis()-time60s)>60000) && (nanode.hour>0 || nanode.mins>0 || nanode.sec>0)) {
-    time60s = millis();
+  if (((millis()-timeTX)>(TIMETX_PERIOD*60000)) && (nanode.hour>0 || nanode.mins>0 || nanode.sec>0)) {
+    timeTX = millis();
     int i = 0; while (!rf12_canSend() && i<10) {rf12_recvDone(); i++;}
     rf12_sendStart(0, &nanode, sizeof nanode);                        
     rf12_sendWait(0);
     #ifdef DEBUG  
-    Serial.print("Time sent: ");
+    Serial.print("time sent ");
+    if ( nanode.hour < 10 ) { Serial.print('0'); }
     Serial.print(nanode.hour);
     Serial.print(":");
+    if ( nanode.mins < 10 ) { Serial.print('0'); }
     Serial.print(nanode.mins);
     Serial.print(":");
-    Serial.println(nanode.sec);
+    if ( nanode.sec < 10 ) { Serial.print('0'); }
+    Serial.print(nanode.sec);
+    Serial.println();
     #endif
   }
   
