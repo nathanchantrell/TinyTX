@@ -39,6 +39,12 @@ void loop() {
   rx = *(Payload*) rf12_data;
   int value = rx.rxD;
   int millivolts = rx.supplyV;
+  
+ if (RF12_WANTS_ACK) {                  // Send ACK if requested
+   rf12_sendStart(RF12_ACK_REPLY, 0, 0);
+   Serial.println(“-> ack sent”);
+ }
+
   Serial.println("Received a packet:");
   Serial.print("From Node: ");
   Serial.println(nodeID);
