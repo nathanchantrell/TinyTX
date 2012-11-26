@@ -42,7 +42,7 @@ void loop() {
   
  if (RF12_WANTS_ACK) {                  // Send ACK if requested
    rf12_sendStart(RF12_ACK_REPLY, 0, 0);
-   Serial.println(“-> ack sent”);
+   Serial.println("-> ack sent");
  }
 
   Serial.println("Received a packet:");
