@@ -12,7 +12,7 @@
 //----------------------------------------------------------------------------------------------------------------------
 
 #include <OneWire.h> // http://www.pjrc.com/teensy/arduino_libraries/OneWire.zip
-#include <DallasTemperature.h> // http://download.milesburton.com/Arduino/MaximTemperature/DallasTemperature_371Beta.zip
+#include <DallasTemperature.h> // http://download.milesburton.com/Arduino/MaximTemperature/DallasTemperature_LATEST.zip
 #include <JeeLib.h> // https://github.com/jcw/jeelib
 
 ISR(WDT_vect) { Sleepy::watchdogEvent(); } // interrupt handler for JeeLabs Sleepy power saving
@@ -20,6 +20,8 @@ ISR(WDT_vect) { Sleepy::watchdogEvent(); } // interrupt handler for JeeLabs Slee
 #define myNodeID 1        // RF12 node ID in the range 1-30
 #define network 210       // RF12 Network group
 #define freq RF12_433MHZ  // Frequency of RFM12B module
+
+#define USE_ACK           // Enable ACKs, comment out to disable
 #define RETRY_PERIOD 5    // How soon to retry (in seconds) if ACK didn't come in
 #define RETRY_LIMIT 5     // Maximum number of times to retry
 #define ACK_TIME 10       // Number of milliseconds to wait for an ack
@@ -61,7 +63,8 @@ void loop() {
   
   digitalWrite(ONE_WIRE_POWER, HIGH); // turn DS18B20 sensor on
 
-  Sleepy::loseSomeTime(10); // Allow 10ms for the sensor to be ready
+  Sleepy::loseSomeTime(5); // Allow 5ms for the sensor to be ready
+  // delay(5); // The above doesn't seem to work for everyone (why?) use this instead if sensor reads 85
  
   sensors.begin(); //start up temp sensor
   sensors.requestTemperatures(); // Get the temperature
@@ -81,22 +84,33 @@ void loop() {
 // Send payload data via RF
 //-------------------------------------------------------------------------------------------------
  static void rfwrite(){
+  #ifdef USE_ACK
    for (byte i = 0; i <= RETRY_LIMIT; ++i) {  // tx and wait for ack up to RETRY_LIMIT times
      rf12_sleep(-1);              // Wake up RF module
       while (!rf12_canSend())
       rf12_recvDone();
       rf12_sendStart(RF12_HDR_ACK, &tinytx, sizeof tinytx); 
       rf12_sendWait(2);           // Wait for RF to finish sending while in standby mode
-      byte acked = waitForAck();
+      byte acked = waitForAck();  // Wait for ACK
       rf12_sleep(0);              // Put RF module to sleep
-      if (acked) { return; }
+      if (acked) { return; }      // Return if ACK received
   
    Sleepy::loseSomeTime(RETRY_PERIOD * 1000);     // If no ack received wait and try again
    }
+  #else
+     rf12_sleep(-1);              // Wake up RF module
+     while (!rf12_canSend())
+     rf12_recvDone();
+     rf12_sendStart(0, &tinytx, sizeof tinytx); 
+     rf12_sendWait(2);           // Wait for RF to finish sending while in standby mode
+     rf12_sleep(0);              // Put RF module to sleep
+     return;
+  #endif
  }
 
 // Wait a few milliseconds for proper ACK
- static byte waitForAck() {
+ #ifdef USE_ACK
+  static byte waitForAck() {
    MilliTimer ackTimer;
    while (!ackTimer.poll(ACK_TIME)) {
      if (rf12_recvDone() && rf12_crc == 0 &&
@@ -104,7 +118,8 @@ void loop() {
         return 1;
      }
    return 0;
- }
+  }
+ #endif
 
 //--------------------------------------------------------------------------------------------------
 // Read current supply voltage
@@ -113,7 +128,11 @@ void loop() {
    bitClear(PRR, PRADC); ADCSRA |= bit(ADEN); // Enable the ADC
    long result;
    // Read 1.1V reference against Vcc
-   ADMUX = _BV(MUX5) | _BV(MUX0);
+   #if defined(__AVR_ATtiny84__) 
+    ADMUX = _BV(MUX5) | _BV(MUX0); // For ATtiny84
+   #else
+    ADMUX = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);  // For ATmega328
+   #endif 
    delay(2); // Wait for Vref to settle
    ADCSRA |= _BV(ADSC); // Convert
    while (bit_is_set(ADCSRA,ADSC));
