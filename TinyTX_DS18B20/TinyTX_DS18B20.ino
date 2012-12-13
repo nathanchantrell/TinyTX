@@ -63,8 +63,8 @@ void loop() {
   
   digitalWrite(ONE_WIRE_POWER, HIGH); // turn DS18B20 sensor on
 
-  Sleepy::loseSomeTime(5); // Allow 5ms for the sensor to be ready
-  // delay(5); // The above doesn't seem to work for everyone (why?) use this instead if sensor reads 85
+  //Sleepy::loseSomeTime(5); // Allow 5ms for the sensor to be ready
+  delay(5); // The above doesn't seem to work for everyone (why?)
  
   sensors.begin(); //start up temp sensor
   sensors.requestTemperatures(); // Get the temperature
