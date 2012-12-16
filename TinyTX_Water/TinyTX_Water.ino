@@ -130,6 +130,6 @@ void loop() {
    result = ADCL;
    result |= ADCH<<8;
    result = 1126400L / result; // Back-calculate Vcc in mV
-   return result;
    ADCSRA &= ~ bit(ADEN); bitSet(PRR, PRADC); // Disable the ADC to save power
+   return result;
 } 
