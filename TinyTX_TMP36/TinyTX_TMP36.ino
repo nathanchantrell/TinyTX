@@ -61,7 +61,11 @@ void loop() {
 
   delay(10); // Allow 10ms for the sensor to be ready
  
+  bitClear(PRR, PRADC); ADCSRA |= bit(ADEN); // Enable the ADC
+
   analogRead(tempPin); // throw away the first reading
+
+  ADCSRA &= ~ bit(ADEN); bitSet(PRR, PRADC); // Disable the ADC to save power
   
   for(int i = 0; i < 10 ; i++) // take 10 more readings
   {

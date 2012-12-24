@@ -52,7 +52,9 @@ void loop() {
 
   digitalWrite(9, HIGH); // set D9 high
   delay(10);
+  bitClear(PRR, PRADC); ADCSRA |= bit(ADEN); // Enable the ADC
   int reading = analogRead(0);
+  ADCSRA &= ~ bit(ADEN); bitSet(PRR, PRADC); // Disable the ADC to save power
   digitalWrite(9, LOW); // set D9 low
 
   tinytx.supplyV = readVcc(); // Get supply voltage

@@ -58,7 +58,10 @@ void setup() {
 
 void loop() {
 
+  bitClear(PRR, PRADC); ADCSRA |= bit(ADEN); // Enable the ADC
   powerReading = analogRead(powerPin); // calculate the average
+  ADCSRA &= ~ bit(ADEN); bitSet(PRR, PRADC); // Disable the ADC to save power
+
   static boolean ledOn = false;  
 
     if (!ledOn && powerReading < 1010) {
