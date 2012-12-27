@@ -35,33 +35,18 @@ ISR(WDT_vect) { Sleepy::watchdogEvent(); } // interrupt handler for JeeLabs Slee
 
  Payload tinytx;
 
-//########################################################################################################################
-
-void setup() {
-
-  rf12_initialize(myNodeID,freq,network); // Initialize RFM12 with settings defined above 
-  rf12_sleep(0);                          // Put the RFM12 to sleep
-
-  pinMode(9, OUTPUT); // set D9 to output
-
-}
-
-void loop() {
-
-  digitalWrite(9, HIGH); // set D9 high
-  delay(10);
-  bitClear(PRR, PRADC); ADCSRA |= bit(ADEN); // Enable the ADC
-  tinytx.light = 1024-analogRead(0);   // read the input pin (A0)
-  ADCSRA &= ~ bit(ADEN); bitSet(PRR, PRADC); // Disable the ADC to save power
-  digitalWrite(9, LOW); // set D9 low
-  
-  tinytx.supplyV = readVcc(); // Get supply voltage
-
-  rfwrite(); // Send data via RF 
-
-  Sleepy::loseSomeTime(60000); //JeeLabs power save function: enter low power mode for 60 seconds (valid range 16-65000 ms)
-   
-}
+// Wait a few milliseconds for proper ACK
+ #ifdef USE_ACK
+  static byte waitForAck() {
+   MilliTimer ackTimer;
+   while (!ackTimer.poll(ACK_TIME)) {
+     if (rf12_recvDone() && rf12_crc == 0 &&
+        rf12_hdr == (RF12_HDR_DST | RF12_HDR_CTL | myNodeID))
+        return 1;
+     }
+   return 0;
+  }
+ #endif
 
 //--------------------------------------------------------------------------------------------------
 // Send payload data via RF
@@ -91,18 +76,7 @@ void loop() {
   #endif
  }
 
-// Wait a few milliseconds for proper ACK
- #ifdef USE_ACK
-  static byte waitForAck() {
-   MilliTimer ackTimer;
-   while (!ackTimer.poll(ACK_TIME)) {
-     if (rf12_recvDone() && rf12_crc == 0 &&
-        rf12_hdr == (RF12_HDR_DST | RF12_HDR_CTL | myNodeID))
-        return 1;
-     }
-   return 0;
-  }
- #endif
+
 
 //--------------------------------------------------------------------------------------------------
 // Read current supply voltage
@@ -125,3 +99,33 @@ void loop() {
    ADCSRA &= ~ bit(ADEN); bitSet(PRR, PRADC); // Disable the ADC to save power
    return result;
 } 
+
+//########################################################################################################################
+
+void setup() {
+
+  rf12_initialize(myNodeID,freq,network); // Initialize RFM12 with settings defined above 
+  rf12_sleep(0);                          // Put the RFM12 to sleep
+
+  pinMode(9, OUTPUT); // set D9 to output
+
+}
+
+void loop() {
+
+  digitalWrite(9, HIGH); // set D9 high
+  delay(10);
+  bitClear(PRR, PRADC); ADCSRA |= bit(ADEN); // Enable the ADC
+  tinytx.light = 1024-analogRead(0);   // read the input pin (A0)
+  ADCSRA &= ~ bit(ADEN); bitSet(PRR, PRADC); // Disable the ADC to save power
+  digitalWrite(9, LOW); // set D9 low
+  
+  tinytx.supplyV = readVcc(); // Get supply voltage
+
+  rfwrite(); // Send data via RF 
+
+  Sleepy::loseSomeTime(60000); //JeeLabs power save function: enter low power mode for 60 seconds (valid range 16-65000 ms)
+   
+}
+
+
