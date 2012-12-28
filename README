@@ -31,6 +31,11 @@ TinyTX_LDR
 With LDR to read light levels.
 
 
+TinyTX_Hall_Effect_Gas
+----------------------
+Using an A3214EUA-T or A3213EUA-T Hall Effect Sensor to read the pulse magnet on a gas meter.
+
+
 TinyTX_Water
 ------------
 A leak/flood sensor using the TinyTX, a 100K resistor and two wire probes. See below for a receiver.
