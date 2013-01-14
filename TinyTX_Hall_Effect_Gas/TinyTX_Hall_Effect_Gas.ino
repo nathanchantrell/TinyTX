@@ -2,6 +2,8 @@
 // TinyTX_Hall_Effect_Gas - An ATtiny84 Gas Usage Monitoring Node
 // By Nathan Chantrell. For hardware design see http://nathan.chantrell.net/tinytx
 //
+// Simplified version, sends whenever there is a new pulse.
+//
 // Using an A3214EUA-T or A3213EUA-T Hall Effect Sensor
 // Power (pin 1) of sensor to D9, output (pin 3) to D10, 0.1uF capactior across power & ground
 //
@@ -13,22 +15,19 @@
 
 #include <JeeLib.h> // https://github.com/jcw/jeelib
 
-#define myNodeID 9      // RF12 node ID in the range 1-30
-#define network 210      // RF12 Network group
-#define freq RF12_433MHZ // Frequency of RFM12B module
+#define myNodeID 9        // RF12 node ID in the range 1-30
+#define network 210       // RF12 Network group
+#define freq RF12_433MHZ  // Frequency of RFM12B module
 
 #define USE_ACK           // Enable ACKs, comment out to disable
 #define RETRY_PERIOD 5    // How soon to retry (in seconds) if ACK didn't come in
 #define RETRY_LIMIT 5     // Maximum number of times to retry
 #define ACK_TIME 10       // Number of milliseconds to wait for an ack
 
-#define powerPin 9       // Sensors power pin is on D9 (ATtiny pin 12)
+#define powerPin 9        // Sensors power pin is on D9 (ATtiny pin 12)
 #define sensorPin 10      // Sensors data pin is on D10 (ATtiny pin 13)
 
-unsigned long last = millis(); // Counter for last pulse read time
-unsigned long lastTx = 0;      // Counter for last TX time
-int pulseCount;                // Number of pulses since last TX
-byte lastPulse = 0;             // Last reading from sensor
+byte lastPulse = 0;       // Last reading from sensor
  
 //--------------------------------------------------------------------------------------------------
 //Data Structure to be sent
@@ -124,28 +123,20 @@ void setup() {
 }
 
 void loop() {
-
+  
   byte newPulse = digitalRead(sensorPin);  // Read sensor pin
 
   if (newPulse == 0 && lastPulse == 1) { // New pulse detected
-    pulseCount++;     // increment pulse counter
-    last = millis();  // reset last pulse timer
-  } 
-  
-  lastPulse = newPulse;
-  
-  if (((millis() - lastTx) > 60000) && (pulseCount > 0)){ // 60 sec passed, send data if any
 
-    tinytx.gas = pulseCount;  // Each pulse = 0.01 m3/pulse, multiply at receiving end.
+    tinytx.gas = 1;  // Each pulse = 0.01 m3/pulse, multiply by 0.01 at receiving end.
 
-    lastTx = millis(); // Reset TX timer
-    pulseCount = 0;    // Reset pulse counter
-  
     tinytx.supplyV = readVcc(); // Get supply voltage
 
     rfwrite(); // Send data via RF    
-  }
+    
+  } 
+  
+  lastPulse = newPulse;
 
 }
-
 
