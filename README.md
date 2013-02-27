@@ -1,67 +1,62 @@
-TinyTX - An ATtiny84 and RFM12B wireless sensor node
-----------------------------------------------------
+#TinyTX - An ATtiny84 and RFM12B wireless sensor node
 
 By Nathan Chantrell. For hardware design see http://nathan.chantrell.net/tinytx
 
 Licenced under the Creative Commons Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0) licence: http://creativecommons.org/licenses/by-sa/3.0/
 
 
-TinyTX_DS18B20
---------------
+##TinyTX_DS18B20
 With DS18B20 temperature sensor. 
 
 
-TinyTX_DHT22
-------------
+##TinyTX_DHT22
 With DHT22 temperature & humidity sensor.
 
 
-TinyTX_TMP36
-------------
+##TinyTX_TMP36
 With TMP36 Analogue Temperature Sensor.
 
 
-TinyTX_LDR_Meter  
-----------------
+##TinyTX_LDR_Meter  
 With LDR to read LED pulses on electricity meter.
 
 
-TinyTX_LDR 
-----------
+##TinyTX_LDR 
 With LDR to read light levels.
 
 
-TinyTX_Hall_Effect_Gas
-----------------------
+##TinyTX_ReedSwitch
+Detect a normally closed reed switch opening and closing with pin change interrupt to wake from sleep.
+
+
+##TinyTX_Hall_Effect_Gas
 Using an A3214EUA-T or A3213EUA-T Hall Effect Sensor to read the pulse magnet on a gas meter.
 
 
-TinyTX_Water
-------------
+##TinyTX_Rain_Gauge
+Using a tipping bucket rain gauge with a reed switch to indicate each tip. A pin change interrupt is used to wake the TinyTX
+
+
+##TinyTX_Water
 A leak/flood sensor using the TinyTX, a 100K resistor and two wire probes. See below for a receiver.
 
 
-TinyTX_Water_RX
----------------
+##TinyTX_Water_RX
 Receiver example for the above leak/flood sensor, can be run on a Tiny TX and brings D9 high on a water alarm and D10 high on a low battery alarm. Could be used to trigger an external device, sound a buzzer etc. Same code could also be used on a Nanode/WiNode etc.
 
 
-TinyTX_RX_Simple
-----------------
+##TinyTX_RX_Simple
 A simple receive example, outputing received data on the serial monitor. 
 
 
-TinyTX_NanodeRF_emoncms
------------------------
+##TinyTX_NanodeRF_emoncms
 For the Nanode RF (http://www.nanode.eu/) to upload multiple nodes to emoncms
 
 
-TinyTX_MAX1284_emoncms
-----------------------
+##TinyTX_MAX1284_emoncms
 For the upcoming MAX1284 internet gateway (http://max1284.homelabs.org.uk/) to upload multiple nodes to emoncms
 
 
-TinyTX_NanodeRF_Cosm
---------------------
+##TinyTX_NanodeRF_Cosm
 Nanode RF example to upload data from a single TinyTX to http://cosm.com
 
