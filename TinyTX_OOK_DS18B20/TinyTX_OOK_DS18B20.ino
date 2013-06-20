@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------------------------------------------------
-// TinyTX - An ATtiny84 and ASK RF Module Wireless Temperature Sensor Node
+// TinyTX - An ATtiny84 and OOK RF Module Wireless Temperature Sensor Node
 // By Nathan Chantrell. http://nathan.chantrell.net/tinytx
 //
 // Using the Dallas DS18B20 temperature sensor and a cheap ASK/OOK transmitter
@@ -16,7 +16,7 @@
 #include <DallasTemperature.h> // http://download.milesburton.com/Arduino/MaximTemperature/DallasTemperature_LATEST.zip
 #include <Narcoleptic.h> // https://code.google.com/p/narcoleptic/
 
-#define myNodeID 1   // node ID in the range 0-255
+#define myNodeID 90  // node ID
 #define TX_PIN 5     // Transmitter data is connected to D5
 #define TX_POWER 6   // Transmitter power is connected to D6
 #define TX_GND 1     // Transmitter power is connected to D1
@@ -33,7 +33,7 @@ DallasTemperature sensors(&oneWire); // Pass our oneWire reference to Dallas Tem
 //########################################################################################################################
 
  typedef struct {
-  	  byte nodeID;	// Sensor Node ID
+  	  int nodeID;	// Sensor Node ID
    	  int temp;	// Temperature reading
   	  int supplyV;	// Supply voltage
  } Payload;
@@ -103,10 +103,10 @@ void loop()
   digitalWrite(ONE_WIRE_POWER, LOW); // turn DS18B20 off
   
   tinytx.supplyV = readVcc(); // Get supply voltage
-  
+    
   rfwrite(); // Send data via RF 
-
-  Narcoleptic.delay(60000); // enter low power mode for 60 seconds, valid range 16-32767 ms with standard Narcoleptic lib
+  
+  Narcoleptic.delay(10000); // enter low power mode for 60 seconds, valid range 16-32767 ms with standard Narcoleptic lib
                             // change variable for delay from int to unsigned int in Narcoleptic.cpp and Narcoleptic.h
                             // to extend range up to 65535 ms
 

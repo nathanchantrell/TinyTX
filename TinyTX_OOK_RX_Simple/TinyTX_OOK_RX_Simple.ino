@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------------------------------------------------
-// ASK RF Module Simple Receive Example
+// OOK RF Module Simple Receive Example
 // By Nathan Chantrell. http://zorg.org/
 //
 // Using a cheap ASK/OOK receiver
@@ -14,7 +14,7 @@
 
 // Data structure to receive
  typedef struct {
-          byte nodeID;          // sensor node ID
+          int nodeID;          // sensor node ID
           int rxD;              // sensor value
           int supplyV;          // tx voltage
  } Payload;
@@ -40,6 +40,8 @@ void loop() {
     MANRX_BeginReceiveBytes(6, data);
   
    rx = *(Payload*) data;
+   
+   if (rx.nodeID != 0) {
    Serial.println("Received a packet:");
    Serial.print("From Node: ");
    Serial.println(rx.nodeID);
@@ -48,6 +50,7 @@ void loop() {
    Serial.print("TX Millivolts: ");
    Serial.println(rx.supplyV);
    Serial.println("--------------------");
+   }
 
   }
 
