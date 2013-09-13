@@ -2,7 +2,7 @@
 // TinyTX_LDR_Meter - An ATtiny84 and RFM12B Wireless Electricity Consumption Meter Node
 // By Nathan Chantrell. For hardware design see http://nathan.chantrell.net/tinytx
 //
-/ Modified for power meter use by Troels. 
+// Modified for power meter use by Troels. 
 // - LDR connected between A0/(D10) (ATtiny pin 13) and ground
 // - 4K7 resistor between A0/(D10) and D9 (ATtiny pin 12)
 //
@@ -19,7 +19,7 @@ ISR(WDT_vect) { Sleepy::watchdogEvent(); } // interrupt handler for JeeLabs Slee
 static unsigned long last;
 static unsigned long watts;
 
-#define myNodeID 4      // RF12 node ID in the range 1-30
+#define myNodeID 4       // RF12 node ID in the range 1-30
 #define network 210      // RF12 Network group
 #define freq RF12_433MHZ // Frequency of RFM12B module
 
