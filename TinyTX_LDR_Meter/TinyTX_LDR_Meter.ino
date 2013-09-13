@@ -2,7 +2,7 @@
 // TinyTX_LDR_Meter - An ATtiny84 and RFM12B Wireless Electricity Consumption Meter Node
 // By Nathan Chantrell. For hardware design see http://nathan.chantrell.net/tinytx
 //
-// Modified for power meter use by Troels. 
+/ Modified for power meter use by Troels. 
 // - LDR connected between A0/(D10) (ATtiny pin 13) and ground
 // - 4K7 resistor between A0/(D10) and D9 (ATtiny pin 12)
 //
@@ -12,8 +12,6 @@
 // Requires Arduino IDE with arduino-tiny core: http://code.google.com/p/arduino-tiny/
 //----------------------------------------------------------------------------------------------------------------------
 
-#define DEBUG       //uncomment enable powerReading debug. Used to calibrate the sunlights influence on ldr.
-
 #include <JeeLib.h> // https://github.com/jcw/jeelib
 
 ISR(WDT_vect) { Sleepy::watchdogEvent(); } // interrupt handler for JeeLabs Sleepy power saving
@@ -21,9 +19,9 @@ ISR(WDT_vect) { Sleepy::watchdogEvent(); } // interrupt handler for JeeLabs Slee
 static unsigned long last;
 static unsigned long watts;
 
-#define myNodeID 10      // RF12 node ID in the range 1-30
+#define myNodeID 4      // RF12 node ID in the range 1-30
 #define network 210      // RF12 Network group
-#define freq RF12_868MHZ // Frequency of RFM12B module
+#define freq RF12_433MHZ // Frequency of RFM12B module
 
 #define USE_ACK           // Enable ACKs, comment out to disable
 #define RETRY_PERIOD 5    // How soon to retry (in seconds) if ACK didn't come in
@@ -32,6 +30,8 @@ static unsigned long watts;
 
 #define powerPin A0       // LDR Vout connected to A0 (ATtiny pin 13)
 int powerReading;         // Analogue reading from the sensor
+int sendInterval = 1;	  // Defines min. interval between sending of data in seconds
+			  // (Small number = High accuracy. Larger number = less power hungry)
 
 //########################################################################################################################
 //Data Structure to be sent
@@ -40,10 +40,6 @@ int powerReading;         // Analogue reading from the sensor
  typedef struct {
   	  int power;	// Temperature reading
   	  int supplyV;	// Supply voltage
-	   #ifdef DEBUG
-	    int debugOn;	// powerReading 0-1024
-	    int debugOff;	// powerReading 0-1024
-	   #endif
  } Payload;
 
  Payload tinytx;
@@ -135,38 +131,34 @@ void loop() {
 
   static boolean ledOn = false;  
 
-  if (powerReading < 1010) {
+    if (!ledOn && powerReading < 1010) {
         ledOn = true;
-       #ifdef DEBUG
-        tinytx.debugOn = powerReading; // Get the powerReading (0-1024) for sunlight calibration
-       #endif
-  }   else if (ledOn && powerReading > 1020) {
+    } else if (ledOn && powerReading > 1020) {
         ledOn = false;
-       #ifdef DEBUG
-        tinytx.debugOff = powerReading; // Get the powerReading (0-1024) for sunlight calibration
-       #endif
 
+    static int nBlinks = 0;
     unsigned long time = millis();
     unsigned long interval = time - last;
 
+    nBlinks++;
     if (interval < 0) { // millis() overflow
         last = time;
-    } else if (interval > 500) {    // 0.5+ sec passed since last blink (2 blinks/sec. = 7200w)
+        nBlinks = 0;
+    } else if (interval > 1000 * sendInterval) {
         // Blinks are 1000 per kWh, or 1 Wh each
         // One hour has 3.6M milliseconds
-        watts = 1 * 3.6E6 / interval;
+        watts = nBlinks * 1 * 3.6E6 / interval;
 
         last = time;
-    }
+        nBlinks = 0;
 
-
-  tinytx.power = watts;        // Get realtime power
+  tinytx.power = watts; // Get realtime power
   
-  tinytx.supplyV = readVcc();  // Get supply voltage
+  tinytx.supplyV = readVcc(); // Get supply voltage
 
   rfwrite(); // Send data via RF    
+    }
   
     }
 
 }
-
