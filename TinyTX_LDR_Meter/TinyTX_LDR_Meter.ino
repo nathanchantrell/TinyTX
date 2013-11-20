@@ -3,7 +3,8 @@
 // By Nathan Chantrell. For hardware design see http://nathan.chantrell.net/tinytx
 //
 // Modified for power meter use by Troels. 
-// Using an LDR connected between the center and right sensor pads (D10/pin 13 and GND) and a 4K7 resistor fitted
+// - LDR connected between A0/(D10) (ATtiny pin 13) and ground
+// - 4K7 resistor between A0/(D10) and D9 (ATtiny pin 12)
 //
 // Licenced under the Creative Commons Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0) licence:
 // http://creativecommons.org/licenses/by-sa/3.0/
@@ -18,7 +19,7 @@ ISR(WDT_vect) { Sleepy::watchdogEvent(); } // interrupt handler for JeeLabs Slee
 static unsigned long last;
 static unsigned long watts;
 
-#define myNodeID 4      // RF12 node ID in the range 1-30
+#define myNodeID 4       // RF12 node ID in the range 1-30
 #define network 210      // RF12 Network group
 #define freq RF12_433MHZ // Frequency of RFM12B module
 
@@ -29,6 +30,8 @@ static unsigned long watts;
 
 #define powerPin A0       // LDR Vout connected to A0 (ATtiny pin 13)
 int powerReading;         // Analogue reading from the sensor
+int sendInterval = 1;	  // Defines min. interval between sending of data in seconds
+			  // (Small number = High accuracy. Larger number = less power hungry)
 
 //########################################################################################################################
 //Data Structure to be sent
@@ -141,23 +144,21 @@ void loop() {
     if (interval < 0) { // millis() overflow
         last = time;
         nBlinks = 0;
-    } else if (interval > 1000) { // 1+ sec passed
+    } else if (interval > 1000 * sendInterval) {
         // Blinks are 1000 per kWh, or 1 Wh each
         // One hour has 3.6M milliseconds
         watts = nBlinks * 1 * 3.6E6 / interval;
 
         last = time;
         nBlinks = 0;
-    }
 
   tinytx.power = watts; // Get realtime power
   
   tinytx.supplyV = readVcc(); // Get supply voltage
 
   rfwrite(); // Send data via RF    
+    }
   
     }
 
 }
-
-
