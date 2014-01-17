@@ -22,9 +22,8 @@
 #include <Narcoleptic.h> // https://code.google.com/p/narcoleptic/
 
 #define myNodeID 1        // node ID 
-#define ONE_WIRE_BUS 3    // DS18B20 Temperature sensor is connected on D3
-#define ONE_WIRE_POWER 0  // DS18B20 Power pin is connected on D0
-#define ONE_WIRE_GND 7    // DS18B20 GND pin is connected on D7
+#define ONE_WIRE_BUS 10   // DS18B20 Temperature sensor is connected on D10
+#define ONE_WIRE_POWER 9  // DS18B20 Power pin is connected on D9
 
 OneWire oneWire(ONE_WIRE_BUS); // Setup a oneWire instance
 
@@ -85,8 +84,6 @@ void setup() {
   
   
   pinMode(ONE_WIRE_POWER, OUTPUT); // set power pin for DS18B20 to output
-  pinMode(ONE_WIRE_GND, OUTPUT);   // set GND pin for DS18B20 to output
-  digitalWrite(ONE_WIRE_GND, LOW); // set GND pin low
   
   PRR = bit(PRTIM1); // only keep timer 0 going 
   
